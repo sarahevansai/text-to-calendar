@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings — Text-to-Calendar</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .settings-wrap { max-width: 600px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+    .section-title { font-size: .8rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 1rem; margin-top: 2rem; }
+    .save-row { display: flex; gap: .75rem; align-items: center; margin-top: 1rem; }
+    .save-confirm { font-size: .875rem; color: var(--success); opacity: 0; transition: opacity .3s; }
+    .save-confirm.show { opacity: 1; }
+    .danger-zone { border: 1px solid var(--danger); border-radius: var(--radius); padding: 1.25rem; }
+    .danger-zone p { font-size: .875rem; margin-top: .4rem; }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="container nav-inner">
+      <a href="/" class="nav-logo">🗓️ Text-to-Calendar</a>
+      <div class="nav-links">
+        <a href="/dashboard" class="btn btn-secondary btn-sm">← Dashboard</a>
+      </div>
+    </div>
+  </nav>
+
+  <div id="loading-state" style="padding:4rem;text-align:center">
+    <div class="loading" style="justify-content:center"><div class="spinner"></div> Loading…</div>
+  </div>
+
+  <div id="settings-content" style="display:none">
+    <div class="container">
+      <div class="settings-wrap">
+        <h1 style="margin-bottom:.5rem">Settings</h1>
+        <p>Manage your family calendar configuration.</p>
+
+        <!-- ---- Family Name ---- -->
+        <div class="section-title">General</div>
+        <div class="card">
+          <div class="form-group">
+            <label>Family / Group Name</label>
+            <input type="text" id="setting-name" maxlength="60">
+          </div>
+          <div class="form-group">
+            <label>Timezone</label>
+            <select id="setting-timezone">
+              <option value="America/Los_Angeles">Pacific Time (LA)</option>
+              <option value="America/Denver">Mountain Time (Denver)</option>
+              <option value="America/Chicago">Central Time (Chicago)</option>
+              <option value="America/New_York">Eastern Time (New York)</option>
+              <option value="America/Phoenix">Arizona (no DST)</option>
+              <option value="America/Anchorage">Alaska</option>
+              <option value="Pacific/Honolulu">Hawaii</option>
+              <option value="Europe/London">London</option>
+              <option value="Europe/Paris">Paris / Berlin</option>
+              <option value="Asia/Tokyo">Tokyo</option>
+              <option value="Australia/Sydney">Sydney</option>
+            </select>
+          </div>
+          <div class="save-row">
+            <button class="btn btn-primary btn-sm" id="btn-save-general">Save</button>
+            <span class="save-confirm" id="general-saved">✓ Saved</span>
+          </div>
+        </div>
+
+        <!-- ---- Calendar ---- -->
+        <div class="section-title">Google Calendar</div>
+        <div class="card">
+          <div class="status-row">
+            <span class="status-label">Connection</span>
+            <span id="cal-status" class="badge badge-gray">Checking…</span>
+          </div>
+          <div class="status-row">
+            <span class="status-label">Active calendar</span>
+            <span id="cal-id" class="status-value">—</span>
+          </div>
+          <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border)">
+            <p style="font-size:.875rem;margin-bottom:.875rem">Need to change which calendar events go into, or reconnect?</p>
+            <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+              <button class="btn btn-secondary btn-sm" id="btn-change-calendar">Change Calendar</button>
+              <a href="#" class="btn btn-secondary btn-sm" id="btn-reconnect-cal">Reconnect Google</a>
+            </div>
+          </div>
+
+          <!-- Calendar picker (hidden by default) -->
+          <div id="calendar-picker" style="display:none;margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border)">
+            <p style="font-size:.875rem;margin-bottom:.75rem">Select a calendar:</p>
+            <div id="calendars-loading" class="loading"><div class="spinner"></div> Loading calendars…</div>
+            <div id="calendars-list"></div>
+            <div style="margin-top:1rem;display:flex;gap:.75rem">
+              <button class="btn btn-primary btn-sm" id="btn-save-calendar" disabled>Save Calendar</button>
+              <button class="btn btn-secondary btn-sm" id="btn-cancel-calendar">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ---- Twilio ---- -->
+        <div class="section-title">Twilio</div>
+        <div class="card">
+          <div class="status-row">
+            <span class="status-label">Phone number</span>
+            <span id="twilio-number" class="status-value" style="font-family:monospace">—</span>
+          </div>
+          <div class="status-row">
+            <span class="status-label">Webhook URL</span>
+            <code id="webhook-url" style="font-size:.8rem;background:var(--bg);padding:.15rem .4rem;border-radius:4px"></code>
+          </div>
+          <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);font-size:.875rem;color:var(--muted)">
+            <p>To change your Twilio number, update <code>TWILIO_PHONE_NUMBER</code> in your <code>.env</code> file and restart the server.</p>
+            <p style="margin-top:.5rem">
+              <a href="https://console.twilio.com/" target="_blank">Open Twilio Console →</a>
+            </p>
+          </div>
+        </div>
+
+        <!-- ---- Active / Pause ---- -->
+        <div class="section-title">Status</div>
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <h3>Calendar active</h3>
+              <p style="font-size:.875rem;margin-top:.2rem">When paused, texts are ignored (no events added).</p>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="active-toggle" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div id="status-msg" style="margin-top:.875rem;font-size:.875rem;color:var(--muted)"></div>
+        </div>
+
+        <!-- ---- Danger Zone ---- -->
+        <div class="section-title">Danger Zone</div>
+        <div class="danger-zone">
+          <h3 style="color:var(--danger)">Reset Setup</h3>
+          <p>This clears your family ID from this browser. Your data stays in the database. Use to switch families or start fresh.</p>
+          <button class="btn btn-danger btn-sm" style="margin-top:.875rem" onclick="resetLocal()">Clear Local Session</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    let familyId = params.get('familyId') || localStorage.getItem('familyId');
+    let familyData = null;
+    let selectedCalendarId = null;
+
+    async function loadSettings() {
+      if (!familyId) {
+        window.location.href = '/setup';
+        return;
+      }
+      try {
+        const res = await fetch(`/api/family/${familyId}`);
+        if (!res.ok) { window.location.href = '/setup'; return; }
+        familyData = await res.json();
+        renderSettings(familyData);
+      } catch (e) {
+        window.location.href = '/setup';
+      }
+    }
+
+    function renderSettings(family) {
+      document.getElementById('loading-state').style.display = 'none';
+      document.getElementById('settings-content').style.display = 'block';
+
+      document.getElementById('setting-name').value = family.name || '';
+      document.getElementById('setting-timezone').value = family.timezone || 'America/Los_Angeles';
+      document.getElementById('twilio-number').textContent = family.twilioNumber || 'Not configured';
+      document.getElementById('webhook-url').textContent = `${window.location.origin}/sms/webhook`;
+      document.getElementById('cal-id').textContent = family.calendarId === 'primary' ? 'Primary Calendar' : family.calendarId;
+      document.getElementById('active-toggle').checked = family.active;
+
+      const calStatus = document.getElementById('cal-status');
+      if (family.calendarConnected) {
+        calStatus.textContent = '✓ Connected';
+        calStatus.className = 'badge badge-green';
+      } else {
+        calStatus.textContent = '✗ Not connected';
+        calStatus.className = 'badge badge-red';
+      }
+
+      document.getElementById('btn-reconnect-cal').href = `/auth/google?familyId=${familyId}`;
+    }
+
+    // Save general settings
+    document.getElementById('btn-save-general').addEventListener('click', async () => {
+      const btn = document.getElementById('btn-save-general');
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+
+      const res = await fetch(`/api/family/${familyId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: document.getElementById('setting-name').value.trim(),
+          timezone: document.getElementById('setting-timezone').value,
+        }),
+      });
+
+      btn.disabled = false;
+      btn.textContent = 'Save';
+
+      if (res.ok) {
+        const saved = document.getElementById('general-saved');
+        saved.classList.add('show');
+        setTimeout(() => saved.classList.remove('show'), 2000);
+      } else {
+        alert('Failed to save. Try again.');
+      }
+    });
+
+    // Active toggle
+    document.getElementById('active-toggle').addEventListener('change', async function() {
+      const active = this.checked;
+      await fetch(`/api/family/${familyId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active }),
+      });
+      document.getElementById('status-msg').textContent = active
+        ? '✓ Calendar is active — texts will create events'
+        : '⏸ Calendar is paused — texts are ignored';
+    });
+
+    // Change calendar
+    document.getElementById('btn-change-calendar').addEventListener('click', async () => {
+      document.getElementById('calendar-picker').style.display = 'block';
+      document.getElementById('btn-change-calendar').style.display = 'none';
+
+      try {
+        const res = await fetch(`/auth/calendars?familyId=${familyId}`);
+        const data = await res.json();
+        document.getElementById('calendars-loading').style.display = 'none';
+        const list = document.getElementById('calendars-list');
+        list.innerHTML = '';
+
+        data.calendars.forEach(cal => {
+          const div = document.createElement('div');
+          div.className = 'calendar-option' + (cal.id === familyData.calendarId ? ' selected' : '');
+          div.dataset.id = cal.id;
+          div.innerHTML = `<div class="calendar-dot" style="background:${cal.color}"></div><div><div class="calendar-name">${cal.name}</div>${cal.primary ? '<div class="calendar-primary">Primary</div>' : ''}</div>`;
+          div.addEventListener('click', () => {
+            document.querySelectorAll('.calendar-option').forEach(o => o.classList.remove('selected'));
+            div.classList.add('selected');
+            selectedCalendarId = cal.id;
+            document.getElementById('btn-save-calendar').disabled = false;
+          });
+          list.appendChild(div);
+        });
+      } catch (e) {
+        document.getElementById('calendars-loading').textContent = 'Failed to load calendars.';
+      }
+    });
+
+    document.getElementById('btn-cancel-calendar').addEventListener('click', () => {
+      document.getElementById('calendar-picker').style.display = 'none';
+      document.getElementById('btn-change-calendar').style.display = 'inline-flex';
+    });
+
+    document.getElementById('btn-save-calendar').addEventListener('click', async () => {
+      if (!selectedCalendarId) return;
+      const res = await fetch(`/api/family/${familyId}/calendar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ calendarId: selectedCalendarId }),
+      });
+      if (res.ok) {
+        document.getElementById('cal-id').textContent = selectedCalendarId === 'primary' ? 'Primary Calendar' : selectedCalendarId;
+        document.getElementById('calendar-picker').style.display = 'none';
+        document.getElementById('btn-change-calendar').style.display = 'inline-flex';
+        alert('Calendar updated!');
+      }
+    });
+
+    function resetLocal() {
+      if (confirm('Clear your local session? (Your data is not deleted)')) {
+        localStorage.removeItem('familyId');
+        window.location.href = '/';
+      }
+    }
+
+    // Styles for calendar option (reused from setup.html)
+    const style = document.createElement('style');
+    style.textContent = `.calendar-option{border:2px solid var(--border);border-radius:8px;padding:.875rem 1rem;cursor:pointer;transition:all .15s;margin-bottom:.5rem;display:flex;align-items:center;gap:.75rem}.calendar-option:hover{border-color:var(--brand);background:var(--brand-light)}.calendar-option.selected{border-color:var(--brand);background:var(--brand-light)}.calendar-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0}.calendar-name{font-weight:500;font-size:.95rem}.calendar-primary{font-size:.8rem;color:var(--muted)}`;
+    document.head.appendChild(style);
+
+    loadSettings();
+  </script>
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Text-to-Calendar — Family events by text message</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .hero { background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); color: white; }
+    .hero p { color: rgba(255,255,255,.85); }
+    .price-tag { display: inline-block; background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3); color: white; padding: .3rem .75rem; border-radius: 999px; font-size: .85rem; margin-bottom: 1rem; }
+    .demo-phone { background: #1F2937; border-radius: 32px; padding: 1.5rem 1rem; max-width: 280px; margin: 2rem auto 0; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+    .demo-screen { background: var(--bg); border-radius: 20px; padding: 1rem; min-height: 180px; }
+    .demo-header { text-align: center; font-size: .75rem; color: var(--muted); padding-bottom: .75rem; border-bottom: 1px solid var(--border); margin-bottom: .75rem; }
+    .demo-header strong { display: block; font-size: .9rem; color: var(--text); }
+    .msg { font-size: .85rem; padding: .5rem .875rem; border-radius: 18px; margin: .4rem 0; max-width: 85%; }
+    .msg-out { background: var(--brand); color: white; margin-left: auto; }
+    .msg-in { background: white; color: var(--text); box-shadow: var(--shadow); }
+    .section-label { text-align: center; margin-bottom: 1rem; }
+    .section-label .eyebrow { font-size: .8rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--brand); }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="container nav-inner">
+      <a href="/" class="nav-logo">🗓️ Text-to-Calendar</a>
+      <div class="nav-links">
+        <a href="https://github.com/sarahevansai/text-to-calendar" target="_blank" class="btn btn-secondary btn-sm">GitHub</a>
+        <a href="/setup" class="btn btn-primary btn-sm">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="container">
+      <div class="price-tag">Open source · Free to self-host</div>
+      <h1>Your family calendar,<br>one text away</h1>
+      <p>Text your family's phone number to add events to Google Calendar. No app. No login. Just text.</p>
+      <div class="hero-cta">
+        <a href="/setup" class="btn btn-lg" style="background:white;color:var(--brand)">Get Started →</a>
+        <a href="https://github.com/sarahevansai/text-to-calendar" target="_blank" class="btn btn-lg" style="background:rgba(255,255,255,.15);color:white;border:1px solid rgba(255,255,255,.3)">View on GitHub</a>
+      </div>
+      <div class="demo-phone">
+        <div class="demo-screen">
+          <div class="demo-header">
+            <strong>+1 (555) 123-4567</strong>
+            Family Calendar
+          </div>
+          <div class="msg msg-out">dentist wednesday 3:30pm</div>
+          <div class="msg msg-in">✓ Added "Dentist Appointment" to Evans Family<br>📅 Wednesday, March 19 at 3:30 PM</div>
+          <div class="msg msg-out">Grammy coming Saturday 10am</div>
+          <div class="msg msg-in">✓ Added "Grammy Visit" to Evans Family<br>📅 Saturday, March 22 at 10:00 AM</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="features" style="background:var(--bg)">
+    <div class="container">
+      <div class="section-label">
+        <div class="eyebrow">How it works</div>
+        <h2>Simple as texting</h2>
+        <p>No app to download. No account for family members to create. Just text the number.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">📱</div>
+          <h3>Text naturally</h3>
+          <p>Type events the way you'd say them: "dentist wed 3pm" or "soccer thursday 4-6pm"</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🧠</div>
+          <h3>AI parses it</h3>
+          <p>Claude understands natural language. No rigid format required — it just gets it.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📅</div>
+          <h3>Google Calendar syncs</h3>
+          <p>Events appear instantly in your family's Google Calendar, viewable by everyone.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">✅</div>
+          <h3>Confirmation reply</h3>
+          <p>You get a text back confirming exactly what was added — date, time, and title.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">👨‍👩‍👧</div>
+          <h3>Whole family</h3>
+          <p>Add all your family members' phone numbers. Everyone can text in events.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔓</div>
+          <h3>Open source</h3>
+          <p>Fork it, deploy your own, customize it. MIT licensed. Your data stays yours.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="steps">
+    <div class="container" style="max-width:640px">
+      <div class="section-label">
+        <div class="eyebrow">Setup</div>
+        <h2>Up and running in 15 minutes</h2>
+        <p>Four steps, then just start texting.</p>
+      </div>
+      <div class="steps-list">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h3>Connect Google Calendar</h3>
+            <p>Sign in with Google to link your family calendar. We only request permission to add events.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h3>Add family members</h3>
+            <p>Enter the phone numbers of everyone who should be able to text in events.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h3>Set up Twilio (~5 min)</h3>
+            <p>Get a free Twilio account and phone number. Point the webhook at your app. Full instructions included.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h3>Start texting</h3>
+            <p>Text "dentist friday 2pm" to your number. Watch it appear on the calendar. Done.</p>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:2.5rem">
+        <a href="/setup" class="btn btn-primary btn-lg">Get Started →</a>
+        <p style="margin-top:.75rem;font-size:.85rem">Or <a href="https://github.com/sarahevansai/text-to-calendar" target="_blank">deploy your own copy</a> from GitHub</p>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding:4rem 0;background:var(--bg)">
+    <div class="container" style="max-width:640px">
+      <div class="section-label">
+        <div class="eyebrow">Examples</div>
+        <h2>What you can text</h2>
+      </div>
+      <div class="card">
+        <table style="width:100%;font-size:.9rem;border-collapse:collapse">
+          <thead>
+            <tr style="border-bottom:2px solid var(--border)">
+              <th style="text-align:left;padding:.75rem;color:var(--muted);font-weight:500">You text</th>
+              <th style="text-align:left;padding:.75rem;color:var(--muted);font-weight:500">What gets added</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:.75rem;font-family:monospace;background:#F9FAFB;border-radius:4px">dentist wednesday 3:30pm</td>
+              <td style="padding:.75rem">Dentist Appointment · Wed 3:30 PM</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:.75rem;font-family:monospace">Grammy coming Saturday 10am</td>
+              <td style="padding:.75rem">Grammy Visit · Sat 10:00 AM</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:.75rem;font-family:monospace">soccer thursday 4pm 2 hours</td>
+              <td style="padding:.75rem">Soccer Practice · Thu 4–6 PM</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:.75rem;font-family:monospace">dinner with mom friday 7pm</td>
+              <td style="padding:.75rem">Dinner with Mom · Fri 7:00 PM</td>
+            </tr>
+            <tr>
+              <td style="padding:.75rem;font-family:monospace">doctor tomorrow 9am</td>
+              <td style="padding:.75rem">Doctor Appointment · Tomorrow 9:00 AM</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <p>🗓️ <strong>Text-to-Calendar</strong> · Open source · MIT License</p>
+      <p style="margin-top:.5rem">
+        <a href="https://github.com/sarahevansai/text-to-calendar" target="_blank">GitHub</a> ·
+        <a href="/setup">Get Started</a>
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

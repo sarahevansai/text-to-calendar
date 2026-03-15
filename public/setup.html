@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Setup — Text-to-Calendar</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body { min-height: 100vh; display: flex; flex-direction: column; background: var(--bg); }
+    .setup-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 2rem 1rem; }
+    .setup-card { width: 100%; max-width: 480px; }
+    .setup-logo { text-align: center; margin-bottom: 2rem; }
+    .setup-logo a { font-size: 1.2rem; font-weight: 700; color: var(--brand); text-decoration: none; }
+    .google-btn { display: flex; align-items: center; gap: .75rem; width: 100%; justify-content: center; padding: .875rem; border: 1px solid var(--border); border-radius: 8px; background: white; font-size: 1rem; font-weight: 500; cursor: pointer; transition: background .15s; text-decoration: none; color: #3c4043; }
+    .google-btn:hover { background: #f8f9fa; text-decoration: none; }
+    .google-icon { width: 20px; height: 20px; }
+    .calendar-option { border: 2px solid var(--border); border-radius: 8px; padding: .875rem 1rem; cursor: pointer; transition: all .15s; margin-bottom: .5rem; display: flex; align-items: center; gap: .75rem; }
+    .calendar-option:hover { border-color: var(--brand); background: var(--brand-light); }
+    .calendar-option.selected { border-color: var(--brand); background: var(--brand-light); }
+    .calendar-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+    .calendar-name { font-weight: 500; font-size: .95rem; }
+    .calendar-primary { font-size: .8rem; color: var(--muted); }
+    .step-header { margin-bottom: 1.5rem; }
+    .step-header .step-num { font-size: .85rem; color: var(--brand); font-weight: 600; margin-bottom: .4rem; }
+    .step-header h2 { margin-bottom: .4rem; color: var(--text); }
+    .step-header p { font-size: .9rem; }
+    #step-1, #step-2, #step-3, #step-4 { display: none; }
+    #step-1.active, #step-2.active, #step-3.active, #step-4.active { display: block; }
+    .progress-dots { display: flex; gap: .5rem; margin-bottom: 2rem; justify-content: center; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+    .dot.active { background: var(--brand); }
+    .dot.done { background: var(--success); }
+    .member-row { display: flex; gap: .75rem; }
+    .member-row input:first-child { flex: 1; }
+    .member-row input:last-child { flex: 1.4; }
+    .member-tag { display: inline-flex; align-items: center; gap: .5rem; background: var(--brand-light); color: var(--brand); padding: .4rem .75rem; border-radius: 999px; font-size: .875rem; margin: .25rem; }
+    .member-tag button { background: none; border: none; cursor: pointer; color: var(--brand); font-size: 1rem; line-height: 1; padding: 0; }
+    #members-display { margin-top: .75rem; min-height: 2rem; }
+  </style>
+</head>
+<body>
+  <div class="setup-wrap">
+    <div class="setup-card">
+      <div class="setup-logo">
+        <a href="/">🗓️ Text-to-Calendar</a>
+      </div>
+
+      <div class="progress-dots" id="progress-dots">
+        <div class="dot active" data-step="1"></div>
+        <div class="dot" data-step="2"></div>
+        <div class="dot" data-step="3"></div>
+        <div class="dot" data-step="4"></div>
+      </div>
+
+      <!-- Error banner -->
+      <div id="error-banner" class="alert alert-error" style="display:none"></div>
+
+      <!-- STEP 1: Connect Google Calendar -->
+      <div id="step-1" class="card active">
+        <div class="step-header">
+          <div class="step-num">Step 1 of 4</div>
+          <h2>Connect Google Calendar</h2>
+          <p>Sign in with Google so we can add events to your calendar. We only request permission to create events.</p>
+        </div>
+        <a href="/auth/google" class="google-btn">
+          <svg class="google-icon" viewBox="0 0 24 24">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+          </svg>
+          Sign in with Google
+        </a>
+        <p style="margin-top:1rem;font-size:.8rem;text-align:center">
+          We request <strong>Calendar: Add Events</strong> only. We cannot read or delete your events.
+        </p>
+      </div>
+
+      <!-- STEP 2: Choose Calendar -->
+      <div id="step-2" class="card">
+        <div class="step-header">
+          <div class="step-num">Step 2 of 4</div>
+          <h2>Choose your calendar</h2>
+          <p>Which calendar should SMS events go into?</p>
+        </div>
+        <div id="calendars-loading" class="loading"><div class="spinner"></div> Loading calendars…</div>
+        <div id="calendars-list"></div>
+        <div id="calendar-error" class="alert alert-error" style="display:none"></div>
+        <div style="margin-top:1.5rem">
+          <button class="btn btn-primary" id="btn-save-calendar" disabled>Continue →</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: Add Family Members -->
+      <div id="step-3" class="card">
+        <div class="step-header">
+          <div class="step-num">Step 3 of 4</div>
+          <h2>Add family members</h2>
+          <p>Add the phone numbers of people who can text in events. Don't forget to add yourself!</p>
+        </div>
+        <div class="form-group">
+          <label>Family / Group Name</label>
+          <input type="text" id="family-name" placeholder="e.g. Evans Family" maxlength="50">
+        </div>
+        <div class="form-group">
+          <label>Add a member</label>
+          <div class="member-row">
+            <input type="text" id="member-name" placeholder="Name (e.g. Mom)">
+            <input type="tel" id="member-phone" placeholder="(555) 123-4567">
+          </div>
+          <button class="btn btn-secondary btn-sm" id="btn-add-member" style="margin-top:.5rem">+ Add Member</button>
+        </div>
+        <div id="members-display"></div>
+        <div id="member-error" class="alert alert-error" style="display:none;margin-top:.75rem"></div>
+        <div style="margin-top:1.5rem">
+          <button class="btn btn-primary" id="btn-save-members">Continue →</button>
+          <button class="btn btn-secondary" id="btn-skip-members" style="margin-left:.5rem">Skip for now</button>
+        </div>
+      </div>
+
+      <!-- STEP 4: Done! -->
+      <div id="step-4" class="card" style="text-align:center">
+        <div style="font-size:3rem;margin-bottom:1rem">🎉</div>
+        <h2>You're all set!</h2>
+        <p style="margin-top:.5rem">Your family calendar is ready. Now set up Twilio so people can actually text in.</p>
+
+        <div class="alert alert-info" style="margin-top:1.5rem;text-align:left">
+          <strong>📱 Your Twilio number:</strong><br>
+          <code id="final-phone" style="font-size:1.1rem;font-weight:700">Configure in .env</code>
+        </div>
+
+        <div style="margin-top:1.5rem;text-align:left">
+          <h3 style="margin-bottom:.75rem">Quick Twilio setup (5 min)</h3>
+          <ol style="padding-left:1.25rem;font-size:.9rem;color:var(--muted);line-height:2">
+            <li>Sign up at <a href="https://twilio.com" target="_blank">twilio.com</a> (free trial)</li>
+            <li>Get a phone number (US numbers are free on trial)</li>
+            <li>Set the webhook URL to: <code id="webhook-url" style="background:var(--bg);padding:.1rem .4rem;border-radius:4px;font-size:.85rem"></code></li>
+            <li>Add your Twilio credentials to <code>.env</code></li>
+            <li>Text the number with "test event tomorrow 3pm" 🎉</li>
+          </ol>
+        </div>
+
+        <div style="margin-top:2rem;display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap">
+          <a href="/dashboard" class="btn btn-primary" id="btn-to-dashboard">Go to Dashboard →</a>
+          <a href="https://github.com/sarahevansai/text-to-calendar#twilio-setup" target="_blank" class="btn btn-secondary">Twilio Instructions</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const familyId = params.get('familyId');
+    const step = params.get('step');
+    const error = params.get('error');
+
+    // State
+    const pendingMembers = [];
+    let selectedCalendarId = null;
+
+    // Show error if passed via URL
+    if (error) {
+      document.getElementById('error-banner').textContent = decodeURIComponent(error);
+      document.getElementById('error-banner').style.display = 'block';
+    }
+
+    // Determine which step to show
+    function showStep(n) {
+      document.querySelectorAll('[id^="step-"]').forEach(el => el.classList.remove('active'));
+      document.getElementById(`step-${n}`).classList.add('active');
+      document.querySelectorAll('#progress-dots .dot').forEach((dot, i) => {
+        dot.className = 'dot';
+        if (i + 1 < n) dot.classList.add('done');
+        else if (i + 1 === n) dot.classList.add('active');
+      });
+    }
+
+    if (step === 'calendar' && familyId) {
+      showStep(2);
+      loadCalendars();
+    } else if (step === 'members' && familyId) {
+      showStep(3);
+    } else if (step === 'done' && familyId) {
+      showStep(4);
+      finalize();
+    } else {
+      showStep(1);
+    }
+
+    // ---- Step 2: Load calendars ----
+
+    async function loadCalendars() {
+      try {
+        const res = await fetch(`/auth/calendars?familyId=${familyId}`);
+        const data = await res.json();
+        document.getElementById('calendars-loading').style.display = 'none';
+        if (!res.ok) {
+          document.getElementById('calendar-error').textContent = data.error;
+          document.getElementById('calendar-error').style.display = 'block';
+          return;
+        }
+        const list = document.getElementById('calendars-list');
+        data.calendars.forEach(cal => {
+          const div = document.createElement('div');
+          div.className = 'calendar-option';
+          div.dataset.id = cal.id;
+          div.innerHTML = `
+            <div class="calendar-dot" style="background:${cal.color}"></div>
+            <div>
+              <div class="calendar-name">${cal.name}</div>
+              ${cal.primary ? '<div class="calendar-primary">Primary calendar</div>' : ''}
+            </div>`;
+          div.addEventListener('click', () => {
+            document.querySelectorAll('.calendar-option').forEach(o => o.classList.remove('selected'));
+            div.classList.add('selected');
+            selectedCalendarId = cal.id;
+            document.getElementById('btn-save-calendar').disabled = false;
+          });
+          // Auto-select primary
+          if (cal.primary) {
+            div.click();
+          }
+          list.appendChild(div);
+        });
+      } catch (e) {
+        document.getElementById('calendars-loading').style.display = 'none';
+        document.getElementById('calendar-error').textContent = 'Failed to load calendars. Try refreshing.';
+        document.getElementById('calendar-error').style.display = 'block';
+      }
+    }
+
+    document.getElementById('btn-save-calendar').addEventListener('click', async () => {
+      if (!selectedCalendarId) return;
+      const btn = document.getElementById('btn-save-calendar');
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+      try {
+        const res = await fetch(`/api/family/${familyId}/calendar`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ calendarId: selectedCalendarId }),
+        });
+        if (res.ok) {
+          showStep(3);
+          window.history.replaceState({}, '', `/setup?step=members&familyId=${familyId}`);
+        } else {
+          const d = await res.json();
+          alert('Error: ' + d.error);
+          btn.disabled = false;
+          btn.textContent = 'Continue →';
+        }
+      } catch (e) {
+        alert('Network error. Try again.');
+        btn.disabled = false;
+        btn.textContent = 'Continue →';
+      }
+    });
+
+    // ---- Step 3: Members ----
+
+    function renderMembers() {
+      const display = document.getElementById('members-display');
+      display.innerHTML = pendingMembers.length ? '' : '';
+      pendingMembers.forEach((m, i) => {
+        const tag = document.createElement('span');
+        tag.className = 'member-tag';
+        tag.innerHTML = `${m.name} <span style="opacity:.7">${m.phone}</span> <button data-i="${i}">×</button>`;
+        tag.querySelector('button').addEventListener('click', () => {
+          pendingMembers.splice(i, 1);
+          renderMembers();
+        });
+        display.appendChild(tag);
+      });
+    }
+
+    document.getElementById('btn-add-member').addEventListener('click', () => {
+      const name = document.getElementById('member-name').value.trim();
+      const phone = document.getElementById('member-phone').value.trim();
+      const err = document.getElementById('member-error');
+      if (!name || !phone) { err.textContent = 'Name and phone are required.'; err.style.display='block'; return; }
+      const digits = phone.replace(/\D/g, '');
+      if (digits.length < 10) { err.textContent = 'Enter a valid 10-digit phone number.'; err.style.display='block'; return; }
+      err.style.display = 'none';
+      pendingMembers.push({ name, phone });
+      renderMembers();
+      document.getElementById('member-name').value = '';
+      document.getElementById('member-phone').value = '';
+      document.getElementById('member-name').focus();
+    });
+
+    document.getElementById('member-phone').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('btn-add-member').click();
+    });
+
+    async function saveMembers() {
+      const familyName = document.getElementById('family-name').value.trim();
+      if (familyName) {
+        await fetch(`/api/family/${familyId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: familyName }),
+        });
+      }
+      for (const m of pendingMembers) {
+        await fetch(`/api/family/${familyId}/members`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(m),
+        });
+      }
+    }
+
+    document.getElementById('btn-save-members').addEventListener('click', async () => {
+      const btn = document.getElementById('btn-save-members');
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+      await saveMembers();
+      showStep(4);
+      window.history.replaceState({}, '', `/setup?step=done&familyId=${familyId}`);
+      finalize();
+    });
+
+    document.getElementById('btn-skip-members').addEventListener('click', () => {
+      showStep(4);
+      window.history.replaceState({}, '', `/setup?step=done&familyId=${familyId}`);
+      finalize();
+    });
+
+    // ---- Step 4: Finalize ----
+
+    async function finalize() {
+      if (!familyId) return;
+      try {
+        const res = await fetch(`/api/family/${familyId}`);
+        const family = await res.json();
+        const phoneEl = document.getElementById('final-phone');
+        phoneEl.textContent = family.twilioNumber || 'Set TWILIO_PHONE_NUMBER in .env';
+        document.getElementById('webhook-url').textContent = `${window.location.origin}/sms/webhook`;
+        document.getElementById('btn-to-dashboard').href = `/dashboard?familyId=${familyId}`;
+        localStorage.setItem('familyId', familyId);
+      } catch (e) {
+        console.error('Finalize error', e);
+      }
+    }
+
+    // If returning to step 1 but already have familyId in localStorage, offer to continue
+    if (!familyId) {
+      const stored = localStorage.getItem('familyId');
+      if (stored) {
+        const banner = document.createElement('div');
+        banner.className = 'alert alert-info';
+        banner.innerHTML = `You have an existing setup. <a href="/dashboard?familyId=${stored}">Go to Dashboard →</a>`;
+        document.getElementById('step-1').insertBefore(banner, document.getElementById('step-1').firstChild);
+      }
+    }
+  </script>
+</body>
+</html>

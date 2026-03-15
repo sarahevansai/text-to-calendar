@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Text-to-Calendar</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .page-title { padding: 1.5rem 0; }
+    .page-title h1 { font-size: 1.5rem; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 700px) { .grid-2 { grid-template-columns: 1fr; } }
+    .add-member-form { display: flex; gap: .75rem; flex-wrap: wrap; }
+    .add-member-form input { flex: 1; min-width: 140px; }
+    .status-pill { display: inline-flex; align-items: center; gap: .4rem; padding: .2rem .7rem; border-radius: 999px; font-size: .8rem; font-weight: 600; }
+    .status-active { background: #ECFDF5; color: #065F46; }
+    .status-paused { background: #FEF3C7; color: #92400E; }
+    .test-result-box { border-radius: 8px; padding: .875rem; font-size: .9rem; margin-top: .75rem; display: none; }
+    .test-success { background: #ECFDF5; color: #065F46; border: 1px solid #6EE7B7; }
+    .test-error { background: #FEF2F2; color: #991B1B; border: 1px solid #FCA5A5; }
+    .card-title { font-size: 1rem; font-weight: 600; margin-bottom: 1.25rem; display: flex; align-items: center; gap: .5rem; }
+    #status-toggle-wrap { display: flex; align-items: center; gap: .75rem; }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="container nav-inner">
+      <a href="/" class="nav-logo">🗓️ Text-to-Calendar</a>
+      <div class="nav-links">
+        <a href="/settings" class="btn btn-secondary btn-sm">⚙️ Settings</a>
+      </div>
+    </div>
+  </nav>
+
+  <div id="loading-state" style="padding:4rem;text-align:center">
+    <div class="loading" style="justify-content:center"><div class="spinner"></div> Loading…</div>
+  </div>
+
+  <div id="not-found" style="padding:4rem;text-align:center;display:none">
+    <h2>No family found</h2>
+    <p style="margin-top:.5rem">Looks like you haven't set up yet.</p>
+    <a href="/setup" class="btn btn-primary" style="margin-top:1.5rem">Get Started →</a>
+  </div>
+
+  <div id="dashboard-content" style="display:none">
+    <div style="background:var(--white);border-bottom:1px solid var(--border)">
+      <div class="container">
+        <div class="page-title">
+          <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+            <h1 id="family-name-title">Your Family</h1>
+            <span id="active-status" class="status-pill status-active">● Active</span>
+          </div>
+          <p id="family-email" style="font-size:.85rem;margin-top:.25rem"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="container" style="padding-top:1.5rem;padding-bottom:3rem">
+
+      <!-- Reconnect banner if needed -->
+      <div id="reconnect-banner" class="alert alert-warning" style="display:none">
+        ⚠️ Your Google Calendar connection needs to be refreshed.
+        <a href="#" id="btn-reconnect">Reconnect →</a>
+      </div>
+
+      <!-- Reconnected success -->
+      <div id="reconnected-banner" class="alert alert-success" style="display:none">
+        ✓ Google Calendar reconnected successfully!
+      </div>
+
+      <!-- Your number -->
+      <div class="card" style="margin-bottom:1.5rem">
+        <div class="card-title">📱 Your Text Number</div>
+        <div class="phone-number-display">
+          <div class="number" id="phone-number">Loading…</div>
+          <p>Family members text this number to add calendar events</p>
+        </div>
+        <p style="font-size:.85rem;text-align:center;margin-top:.75rem">
+          Webhook URL: <code id="webhook-url" style="background:var(--bg);padding:.15rem .4rem;border-radius:4px;font-size:.8rem"></code>
+          <button onclick="copyWebhook()" class="btn btn-secondary btn-sm" style="margin-left:.5rem">Copy</button>
+        </p>
+      </div>
+
+      <div class="grid-2">
+
+        <!-- Family Members -->
+        <div class="card">
+          <div class="card-title">👨‍👩‍👧 Family Members</div>
+
+          <ul class="members-list" id="members-list">
+            <li class="empty-state" id="no-members">No members yet. Add some below!</li>
+          </ul>
+
+          <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border)">
+            <div class="form-group" style="margin-bottom:.75rem">
+              <input type="text" id="new-member-name" placeholder="Name (e.g. Mom)" maxlength="50">
+            </div>
+            <div class="add-member-form">
+              <input type="tel" id="new-member-phone" placeholder="(555) 123-4567">
+              <button class="btn btn-primary btn-sm" id="btn-add-member">+ Add</button>
+            </div>
+            <div id="add-member-error" class="alert alert-error" style="display:none;margin-top:.5rem;font-size:.85rem"></div>
+          </div>
+        </div>
+
+        <!-- Test SMS + Status -->
+        <div style="display:flex;flex-direction:column;gap:1.5rem">
+
+          <!-- Test SMS -->
+          <div class="card">
+            <div class="card-title">🧪 Test It Out</div>
+            <p style="font-size:.9rem;margin-bottom:1rem">Send a test event directly to your calendar (no SMS needed).</p>
+            <div style="display:flex;gap:.5rem">
+              <input type="text" id="test-message" placeholder="dentist wednesday 3:30pm" style="flex:1">
+              <button class="btn btn-primary btn-sm" id="btn-test">Send</button>
+            </div>
+            <div class="test-result-box" id="test-result"></div>
+          </div>
+
+          <!-- Status -->
+          <div class="card">
+            <div class="card-title">⚙️ Status</div>
+            <div class="status-row">
+              <span class="status-label">Google Calendar</span>
+              <span id="cal-status" class="badge badge-gray">Checking…</span>
+            </div>
+            <div class="status-row">
+              <span class="status-label">Calendar</span>
+              <span id="cal-name" class="status-value">—</span>
+            </div>
+            <div class="status-row">
+              <span class="status-label">Active</span>
+              <div id="status-toggle-wrap">
+                <label class="toggle">
+                  <input type="checkbox" id="active-toggle" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+                <span id="toggle-label" style="font-size:.85rem;color:var(--muted)">On</span>
+              </div>
+            </div>
+            <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)">
+              <a href="/settings" class="btn btn-secondary btn-sm" style="width:100%;justify-content:center">⚙️ Settings</a>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Quick help -->
+      <div class="card" style="margin-top:1.5rem">
+        <div class="card-title">💬 What to text</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem">
+          <div>
+            <p style="font-family:monospace;background:var(--bg);padding:.4rem .75rem;border-radius:6px;font-size:.875rem;color:var(--text)">dentist wednesday 3:30pm</p>
+            <p style="font-size:.8rem;margin-top:.25rem">→ Dentist Appointment, Wed 3:30 PM</p>
+          </div>
+          <div>
+            <p style="font-family:monospace;background:var(--bg);padding:.4rem .75rem;border-radius:6px;font-size:.875rem;color:var(--text)">Grammy coming Saturday 10am</p>
+            <p style="font-size:.8rem;margin-top:.25rem">→ Grammy Visit, Sat 10:00 AM</p>
+          </div>
+          <div>
+            <p style="font-family:monospace;background:var(--bg);padding:.4rem .75rem;border-radius:6px;font-size:.875rem;color:var(--text)">soccer thursday 4pm 2 hours</p>
+            <p style="font-size:.8rem;margin-top:.25rem">→ Soccer Practice, Thu 4–6 PM</p>
+          </div>
+          <div>
+            <p style="font-family:monospace;background:var(--bg);padding:.4rem .75rem;border-radius:6px;font-size:.875rem;color:var(--text)">dinner with mom friday 7pm</p>
+            <p style="font-size:.8rem;margin-top:.25rem">→ Dinner with Mom, Fri 7:00 PM</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    let familyId = params.get('familyId') || localStorage.getItem('familyId');
+    let familyData = null;
+
+    if (params.get('reconnected')) {
+      document.getElementById('reconnected-banner').style.display = 'block';
+    }
+
+    async function loadDashboard() {
+      if (!familyId) {
+        document.getElementById('loading-state').style.display = 'none';
+        document.getElementById('not-found').style.display = 'block';
+        return;
+      }
+      localStorage.setItem('familyId', familyId);
+
+      try {
+        const res = await fetch(`/api/family/${familyId}`);
+        if (!res.ok) {
+          document.getElementById('loading-state').style.display = 'none';
+          document.getElementById('not-found').style.display = 'block';
+          return;
+        }
+        familyData = await res.json();
+        renderDashboard(familyData);
+      } catch (e) {
+        document.getElementById('loading-state').style.display = 'none';
+        document.getElementById('not-found').style.display = 'block';
+      }
+    }
+
+    function renderDashboard(family) {
+      document.getElementById('loading-state').style.display = 'none';
+      document.getElementById('dashboard-content').style.display = 'block';
+
+      document.getElementById('family-name-title').textContent = family.name;
+      document.getElementById('family-email').textContent = family.email;
+      document.getElementById('phone-number').textContent = family.twilioNumber || 'Not configured (set TWILIO_PHONE_NUMBER)';
+      document.getElementById('webhook-url').textContent = `${window.location.origin}/sms/webhook`;
+
+      // Calendar status
+      const calStatus = document.getElementById('cal-status');
+      if (family.calendarConnected) {
+        calStatus.textContent = '✓ Connected';
+        calStatus.className = 'badge badge-green';
+      } else {
+        calStatus.textContent = '✗ Not connected';
+        calStatus.className = 'badge badge-red';
+        document.getElementById('reconnect-banner').style.display = 'block';
+      }
+      document.getElementById('cal-name').textContent = family.calendarId === 'primary' ? 'Primary' : family.calendarId;
+
+      // Active toggle
+      const toggle = document.getElementById('active-toggle');
+      const statusPill = document.getElementById('active-status');
+      toggle.checked = family.active;
+      updateStatusUI(family.active);
+
+      toggle.addEventListener('change', async () => {
+        const active = toggle.checked;
+        await fetch(`/api/family/${familyId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ active }),
+        });
+        updateStatusUI(active);
+      });
+
+      // Members
+      renderMembers(family.members);
+    }
+
+    function updateStatusUI(active) {
+      const pill = document.getElementById('active-status');
+      const label = document.getElementById('toggle-label');
+      if (active) {
+        pill.textContent = '● Active';
+        pill.className = 'status-pill status-active';
+        label.textContent = 'On';
+      } else {
+        pill.textContent = '◌ Paused';
+        pill.className = 'status-pill status-paused';
+        label.textContent = 'Off';
+      }
+    }
+
+    function renderMembers(members) {
+      const list = document.getElementById('members-list');
+      const empty = document.getElementById('no-members');
+      list.innerHTML = '';
+
+      if (!members || members.length === 0) {
+        const li = document.createElement('li');
+        li.id = 'no-members';
+        li.className = 'empty-state';
+        li.textContent = 'No members yet. Add some below!';
+        list.appendChild(li);
+        return;
+      }
+
+      members.forEach(m => {
+        const li = document.createElement('li');
+        li.className = 'member-item';
+        li.innerHTML = `
+          <div class="member-info">
+            <span class="member-name">${escapeHtml(m.name)}</span>
+            <span class="member-phone">${m.phone}</span>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="removeMember('${m.id}', this)">Remove</button>`;
+        list.appendChild(li);
+      });
+    }
+
+    async function removeMember(memberId, btn) {
+      if (!confirm('Remove this member?')) return;
+      btn.disabled = true;
+      const res = await fetch(`/api/family/${familyId}/members/${memberId}`, { method: 'DELETE' });
+      if (res.ok) {
+        familyData.members = familyData.members.filter(m => m.id !== memberId);
+        renderMembers(familyData.members);
+      } else {
+        btn.disabled = false;
+        alert('Failed to remove. Try again.');
+      }
+    }
+
+    document.getElementById('btn-add-member').addEventListener('click', async () => {
+      const name = document.getElementById('new-member-name').value.trim();
+      const phone = document.getElementById('new-member-phone').value.trim();
+      const err = document.getElementById('add-member-error');
+      err.style.display = 'none';
+
+      if (!name || !phone) { err.textContent = 'Name and phone are required.'; err.style.display = 'block'; return; }
+      const digits = phone.replace(/\D/g, '');
+      if (digits.length < 10) { err.textContent = 'Enter a valid 10-digit phone number.'; err.style.display = 'block'; return; }
+
+      const btn = document.getElementById('btn-add-member');
+      btn.disabled = true;
+      btn.textContent = '…';
+
+      try {
+        const res = await fetch(`/api/family/${familyId}/members`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, phone }),
+        });
+        const data = await res.json();
+        if (!res.ok) { err.textContent = data.error; err.style.display = 'block'; }
+        else {
+          familyData.members = familyData.members || [];
+          familyData.members.push(data);
+          renderMembers(familyData.members);
+          document.getElementById('new-member-name').value = '';
+          document.getElementById('new-member-phone').value = '';
+        }
+      } catch (e) {
+        err.textContent = 'Network error. Try again.';
+        err.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '+ Add';
+      }
+    });
+
+    // Test SMS
+    document.getElementById('btn-test').addEventListener('click', async () => {
+      const message = document.getElementById('test-message').value.trim();
+      const result = document.getElementById('test-result');
+      if (!message) return;
+
+      const btn = document.getElementById('btn-test');
+      btn.disabled = true;
+      btn.textContent = '…';
+      result.style.display = 'none';
+
+      try {
+        const res = await fetch(`/api/family/${familyId}/test-sms`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message }),
+        });
+        const data = await res.json();
+        result.style.display = 'block';
+        if (data.success) {
+          result.className = 'test-result-box test-success';
+          result.innerHTML = `${data.message}${data.eventLink ? ` <a href="${data.eventLink}" target="_blank" style="margin-left:.5rem">View on Calendar →</a>` : ''}`;
+        } else {
+          result.className = 'test-result-box test-error';
+          result.textContent = data.error || data.message || 'Something went wrong';
+        }
+      } catch (e) {
+        result.style.display = 'block';
+        result.className = 'test-result-box test-error';
+        result.textContent = 'Network error. Make sure the server is running.';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Send';
+      }
+    });
+
+    document.getElementById('test-message').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('btn-test').click();
+    });
+
+    // Reconnect button
+    document.getElementById('btn-reconnect').addEventListener('click', (e) => {
+      e.preventDefault();
+      window.location.href = `/auth/google?familyId=${familyId}`;
+    });
+
+    function copyWebhook() {
+      const url = `${window.location.origin}/sms/webhook`;
+      navigator.clipboard.writeText(url).then(() => alert('Webhook URL copied!'));
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>
