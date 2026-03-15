@@ -12,6 +12,15 @@
     @media (max-width: 700px) { .grid-2 { grid-template-columns: 1fr; } }
     .add-member-form { display: flex; gap: .75rem; flex-wrap: wrap; }
     .add-member-form input { flex: 1; min-width: 140px; }
+    .color-legend { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
+    .legend-item { display: inline-flex; align-items: center; gap: .4rem; font-size: .85rem; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+    .color-picker-row { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .4rem; }
+    .color-swatch { width: 26px; height: 26px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: transform .15s, border-color .15s; }
+    .color-swatch:hover { transform: scale(1.15); }
+    .color-swatch.selected { border-color: #1a1a1a; transform: scale(1.15); }
+    .member-color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; display: inline-block; margin-right: .3rem; cursor: pointer; }
+    .member-color-dot:hover { transform: scale(1.3); }
     .status-pill { display: inline-flex; align-items: center; gap: .4rem; padding: .2rem .7rem; border-radius: 999px; font-size: .8rem; font-weight: 600; }
     .status-active { background: #ECFDF5; color: #065F46; }
     .status-paused { background: #FEF3C7; color: #92400E; }
@@ -87,6 +96,9 @@
         <div class="card">
           <div class="card-title">👨‍👩‍👧 Family Members</div>
 
+          <!-- Color legend -->
+          <div id="color-legend" class="color-legend" style="margin-bottom:.75rem"></div>
+
           <ul class="members-list" id="members-list">
             <li class="empty-state" id="no-members">No members yet. Add some below!</li>
           </ul>
@@ -98,6 +110,10 @@
             <div class="add-member-form">
               <input type="tel" id="new-member-phone" placeholder="(555) 123-4567">
               <button class="btn btn-primary btn-sm" id="btn-add-member">+ Add</button>
+            </div>
+            <div style="margin-top:.5rem">
+              <div style="font-size:.78rem;color:var(--muted);margin-bottom:.3rem">Calendar color for this person</div>
+              <div class="color-picker-row" id="dash-color-picker"></div>
             </div>
             <div id="add-member-error" class="alert alert-error" style="display:none;margin-top:.5rem;font-size:.85rem"></div>
           </div>
@@ -152,21 +168,22 @@
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem">
           <div>
             <p style="font-family:monospace;background:var(--bg);padding:.4rem .75rem;border-radius:6px;font-size:.875rem;color:var(--text)">dentist wednesday 3:30pm</p>
-            <p style="font-size:.8rem;margin-top:.25rem">→ Dentist Appointment, Wed 3:30 PM</p>
+            <p style="font-size:.8rem;margin-top:.25rem">→ Dentist Appointment, Wed 3:30 PM (your color)</p>
           </div>
           <div>
-            <p style="font-family:monospace;background:var(--bg);padding:.4rem .75rem;border-radius:6px;font-size:.875rem;color:var(--text)">Grammy coming Saturday 10am</p>
-            <p style="font-size:.8rem;margin-top:.25rem">→ Grammy Visit, Sat 10:00 AM</p>
+            <p style="font-family:monospace;background:var(--bg);padding:.4rem .75rem;border-radius:6px;font-size:.875rem;color:var(--text)">Jake's dentist wednesday 3pm</p>
+            <p style="font-size:.8rem;margin-top:.25rem">→ Dentist Appointment in <strong>Jake's color</strong></p>
           </div>
           <div>
-            <p style="font-family:monospace;background:var(--bg);padding:.4rem .75rem;border-radius:6px;font-size:.875rem;color:var(--text)">soccer thursday 4pm 2 hours</p>
-            <p style="font-size:.8rem;margin-top:.25rem">→ Soccer Practice, Thu 4–6 PM</p>
+            <p style="font-family:monospace;background:var(--bg);padding:.4rem .75rem;border-radius:6px;font-size:.875rem;color:var(--text)">soccer for Emma thursday 4pm</p>
+            <p style="font-size:.8rem;margin-top:.25rem">→ Soccer Practice in <strong>Emma's color</strong></p>
           </div>
           <div>
             <p style="font-family:monospace;background:var(--bg);padding:.4rem .75rem;border-radius:6px;font-size:.875rem;color:var(--text)">dinner with mom friday 7pm</p>
             <p style="font-size:.8rem;margin-top:.25rem">→ Dinner with Mom, Fri 7:00 PM</p>
           </div>
         </div>
+        <p style="font-size:.8rem;color:var(--muted);margin-top:.75rem">💡 Event colors show <strong>who the event is for</strong> — not who texted it.</p>
       </div>
 
     </div>
@@ -176,6 +193,62 @@
     const params = new URLSearchParams(window.location.search);
     let familyId = params.get('familyId') || localStorage.getItem('familyId');
     let familyData = null;
+
+    // ---- Color System ----
+    const COLORS = [
+      { id: '1',  hex: '#D50000', name: 'Tomato',    emoji: '🔴' },
+      { id: '7',  hex: '#039BE5', name: 'Peacock',   emoji: '🔵' },
+      { id: '5',  hex: '#33B679', name: 'Sage',      emoji: '🟢' },
+      { id: '4',  hex: '#F6BF26', name: 'Banana',    emoji: '🟡' },
+      { id: '3',  hex: '#F4511E', name: 'Tangerine', emoji: '🟠' },
+      { id: '9',  hex: '#7986CB', name: 'Lavender',  emoji: '💜' },
+      { id: '10', hex: '#8E24AA', name: 'Grape',     emoji: '🟣' },
+      { id: '2',  hex: '#E67C73', name: 'Flamingo',  emoji: '🌸' },
+      { id: '6',  hex: '#0B8043', name: 'Basil',     emoji: '🌿' },
+      { id: '8',  hex: '#3F51B5', name: 'Blueberry', emoji: '🫐' },
+      { id: '11', hex: '#616161', name: 'Graphite',  emoji: '⚫' },
+    ];
+    let selectedColorId = COLORS[0].id;
+
+    function colorById(id) {
+      return COLORS.find(c => c.id === String(id)) || COLORS[0];
+    }
+
+    function buildColorPicker(containerId) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      container.innerHTML = '';
+      COLORS.forEach((c) => {
+        const sw = document.createElement('div');
+        sw.className = 'color-swatch' + (c.id === selectedColorId ? ' selected' : '');
+        sw.style.background = c.hex;
+        sw.title = c.name;
+        sw.dataset.colorId = c.id;
+        sw.addEventListener('click', () => {
+          selectedColorId = c.id;
+          container.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+          sw.classList.add('selected');
+        });
+        container.appendChild(sw);
+      });
+    }
+
+    function nextAutoColor(members) {
+      const used = (members || []).map(m => m.colorId).filter(Boolean);
+      const next = COLORS.find(c => !used.includes(c.id));
+      selectedColorId = next ? next.id : COLORS[0].id;
+      buildColorPicker('dash-color-picker');
+    }
+
+    function renderColorLegend(members) {
+      const legend = document.getElementById('color-legend');
+      if (!legend) return;
+      if (!members || members.length === 0) { legend.innerHTML = ''; return; }
+      legend.innerHTML = members.map(m => {
+        const c = colorById(m.colorId);
+        return `<span class="legend-item"><span class="legend-dot" style="background:${c.hex}"></span>${escapeHtml(m.name)}</span>`;
+      }).join('');
+    }
 
     if (params.get('reconnected')) {
       document.getElementById('reconnected-banner').style.display = 'block';
@@ -243,6 +316,7 @@
 
       // Members
       renderMembers(family.members);
+      buildColorPicker('dash-color-picker');
     }
 
     function updateStatusUI(active) {
@@ -261,7 +335,6 @@
 
     function renderMembers(members) {
       const list = document.getElementById('members-list');
-      const empty = document.getElementById('no-members');
       list.innerHTML = '';
 
       if (!members || members.length === 0) {
@@ -270,20 +343,85 @@
         li.className = 'empty-state';
         li.textContent = 'No members yet. Add some below!';
         list.appendChild(li);
+        renderColorLegend([]);
+        nextAutoColor([]);
         return;
       }
 
       members.forEach(m => {
+        const c = colorById(m.colorId);
         const li = document.createElement('li');
         li.className = 'member-item';
+        li.dataset.memberId = m.id;
         li.innerHTML = `
-          <div class="member-info">
-            <span class="member-name">${escapeHtml(m.name)}</span>
-            <span class="member-phone">${m.phone}</span>
+          <div class="member-info" style="display:flex;align-items:center;gap:.5rem;flex:1">
+            <span class="member-color-dot" style="background:${c.hex}" title="Click to change color" data-member-id="${m.id}"></span>
+            <div>
+              <span class="member-name">${escapeHtml(m.name)}</span>
+              <span class="member-phone">${m.phone}</span>
+            </div>
           </div>
           <button class="btn btn-secondary btn-sm" onclick="removeMember('${m.id}', this)">Remove</button>`;
+
+        // Click on color dot → open inline color picker
+        li.querySelector('.member-color-dot').addEventListener('click', (e) => {
+          e.stopPropagation();
+          openInlineColorPicker(m.id, li, c.id);
+        });
+
         list.appendChild(li);
       });
+
+      renderColorLegend(members);
+      nextAutoColor(members);
+    }
+
+    function openInlineColorPicker(memberId, liEl, currentColorId) {
+      // Remove any existing picker
+      document.querySelectorAll('.inline-color-picker').forEach(el => el.remove());
+
+      const picker = document.createElement('div');
+      picker.className = 'inline-color-picker color-picker-row';
+      picker.style.cssText = 'padding:.4rem;background:var(--white);border:1px solid var(--border);border-radius:8px;position:absolute;z-index:100;box-shadow:0 4px 16px rgba(0,0,0,.12)';
+
+      COLORS.forEach(c => {
+        const sw = document.createElement('div');
+        sw.className = 'color-swatch' + (c.id === currentColorId ? ' selected' : '');
+        sw.style.background = c.hex;
+        sw.title = c.name;
+        sw.addEventListener('click', async () => {
+          picker.remove();
+          await updateMemberColor(memberId, c.id);
+        });
+        picker.appendChild(sw);
+      });
+
+      liEl.style.position = 'relative';
+      liEl.appendChild(picker);
+
+      // Close on outside click
+      setTimeout(() => {
+        document.addEventListener('click', () => picker.remove(), { once: true });
+      }, 0);
+    }
+
+    async function updateMemberColor(memberId, colorId) {
+      try {
+        const res = await fetch(`/api/family/${familyId}/members/${memberId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ colorId }),
+        });
+        if (res.ok) {
+          const updated = await res.json();
+          // Refresh member in familyData
+          const idx = familyData.members.findIndex(m => m.id === memberId);
+          if (idx !== -1) familyData.members[idx] = { ...familyData.members[idx], colorId };
+          renderMembers(familyData.members);
+        }
+      } catch (e) {
+        console.error('Color update failed', e);
+      }
     }
 
     async function removeMember(memberId, btn) {
@@ -317,7 +455,7 @@
         const res = await fetch(`/api/family/${familyId}/members`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, phone }),
+          body: JSON.stringify({ name, phone, colorId: selectedColorId }),
         });
         const data = await res.json();
         if (!res.ok) { err.textContent = data.error; err.style.display = 'block'; }
@@ -336,6 +474,9 @@
         btn.textContent = '+ Add';
       }
     });
+
+    // Initialize color picker when page loads
+    buildColorPicker('dash-color-picker');
 
     // Test SMS
     document.getElementById('btn-test').addEventListener('click', async () => {

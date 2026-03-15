@@ -16,6 +16,7 @@ const {
   getFamilyById,
   updateFamily,
   addMember,
+  updateMember,
   removeMember,
 } = require('../lib/db');
 
@@ -62,7 +63,7 @@ router.put('/family/:id', requireFamily, (req, res) => {
 
 // Add a family member
 router.post('/family/:id/members', requireFamily, (req, res) => {
-  const { name, phone } = req.body;
+  const { name, phone, colorId } = req.body;
 
   if (!name || !phone) {
     return res.status(400).json({ error: 'name and phone are required' });
@@ -75,11 +76,26 @@ router.post('/family/:id/members', requireFamily, (req, res) => {
   }
 
   try {
-    const member = addMember(req.params.id, { name, phone });
+    const member = addMember(req.params.id, { name, phone, colorId: colorId || null });
     res.status(201).json(member);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
+});
+
+// Update a family member (e.g. reassign color)
+router.patch('/family/:id/members/:memberId', requireFamily, (req, res) => {
+  const { colorId, name } = req.body;
+
+  if (!colorId && !name) {
+    return res.status(400).json({ error: 'colorId or name required' });
+  }
+
+  const member = updateMember(req.params.id, req.params.memberId, { colorId, name });
+  if (!member) {
+    return res.status(404).json({ error: 'Member not found' });
+  }
+  res.json(member);
 });
 
 // Remove a family member
@@ -138,8 +154,8 @@ router.post('/family/:id/test-sms', requireFamily, async (req, res) => {
     const { parseEventFromSMS } = require('../lib/claude');
     const { createEvent } = require('../lib/calendar');
 
-    // Step 1: Parse
-    const parsed = await parseEventFromSMS(message, timezone);
+    // Step 1: Parse (pass members so forPerson detection works)
+    const parsed = await parseEventFromSMS(message, timezone, family.members || []);
     if (!parsed.isEvent) {
       return res.json({
         success: false,
@@ -148,10 +164,24 @@ router.post('/family/:id/test-sms', requireFamily, async (req, res) => {
       });
     }
 
-    // Step 2: Create the calendar event
+    // Resolve color: find the member the event is for
+    let colorId = null;
+    if (parsed.forPerson) {
+      const lower = parsed.forPerson.toLowerCase();
+      const match = (family.members || []).find(
+        (m) =>
+          m.name.toLowerCase() === lower ||
+          m.name.toLowerCase().startsWith(lower) ||
+          m.name.toLowerCase().includes(lower)
+      );
+      if (match) colorId = match.colorId;
+    }
+
+    // Step 2: Create the calendar event (with color)
     const event = await createEvent(family.googleTokens, family.calendarId, {
       ...parsed,
       timezone,
+      colorId,
     });
 
     // Step 3: Build confirmation

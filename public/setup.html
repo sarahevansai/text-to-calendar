@@ -36,6 +36,11 @@
     .member-tag { display: inline-flex; align-items: center; gap: .5rem; background: var(--brand-light); color: var(--brand); padding: .4rem .75rem; border-radius: 999px; font-size: .875rem; margin: .25rem; }
     .member-tag button { background: none; border: none; cursor: pointer; color: var(--brand); font-size: 1rem; line-height: 1; padding: 0; }
     #members-display { margin-top: .75rem; min-height: 2rem; }
+    .color-picker-row { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .5rem; }
+    .color-swatch { width: 28px; height: 28px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: transform .15s, border-color .15s; }
+    .color-swatch:hover { transform: scale(1.15); }
+    .color-swatch.selected { border-color: #1a1a1a; transform: scale(1.15); }
+    .color-picker-label { font-size: .8rem; color: var(--muted); margin-bottom: .3rem; }
   </style>
 </head>
 <body>
@@ -108,6 +113,8 @@
             <input type="text" id="member-name" placeholder="Name (e.g. Mom)">
             <input type="tel" id="member-phone" placeholder="(555) 123-4567">
           </div>
+          <div class="color-picker-label" style="margin-top:.5rem">Calendar color (who's it for?)</div>
+          <div class="color-picker-row" id="setup-color-picker"></div>
           <button class="btn btn-secondary btn-sm" id="btn-add-member" style="margin-top:.5rem">+ Add Member</button>
         </div>
         <div id="members-display"></div>
@@ -157,6 +164,50 @@
     // State
     const pendingMembers = [];
     let selectedCalendarId = null;
+
+    // ---- Color Picker ----
+    const COLORS = [
+      { id: '1',  hex: '#D50000', name: 'Tomato'    },
+      { id: '7',  hex: '#039BE5', name: 'Peacock'   },
+      { id: '5',  hex: '#33B679', name: 'Sage'      },
+      { id: '4',  hex: '#F6BF26', name: 'Banana'    },
+      { id: '3',  hex: '#F4511E', name: 'Tangerine' },
+      { id: '9',  hex: '#7986CB', name: 'Lavender'  },
+      { id: '10', hex: '#8E24AA', name: 'Grape'     },
+      { id: '2',  hex: '#E67C73', name: 'Flamingo'  },
+      { id: '6',  hex: '#0B8043', name: 'Basil'     },
+      { id: '8',  hex: '#3F51B5', name: 'Blueberry' },
+      { id: '11', hex: '#616161', name: 'Graphite'  },
+    ];
+    let selectedColorId = COLORS[0].id;
+
+    function buildColorPicker(containerId) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+      COLORS.forEach((c) => {
+        const sw = document.createElement('div');
+        sw.className = 'color-swatch' + (c.id === selectedColorId ? ' selected' : '');
+        sw.style.background = c.hex;
+        sw.title = c.name;
+        sw.dataset.colorId = c.id;
+        sw.addEventListener('click', () => {
+          selectedColorId = c.id;
+          container.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+          sw.classList.add('selected');
+        });
+        container.appendChild(sw);
+      });
+    }
+
+    // Auto-advance selectedColorId to next unused color
+    function nextAutoColor() {
+      const used = pendingMembers.map(m => m.colorId);
+      const next = COLORS.find(c => !used.includes(c.id));
+      if (next) selectedColorId = next.id;
+      buildColorPicker('setup-color-picker');
+    }
+
+    buildColorPicker('setup-color-picker');
 
     // Show error if passed via URL
     if (error) {
@@ -260,13 +311,15 @@
 
     function renderMembers() {
       const display = document.getElementById('members-display');
-      display.innerHTML = pendingMembers.length ? '' : '';
+      display.innerHTML = '';
       pendingMembers.forEach((m, i) => {
+        const colorHex = (COLORS.find(c => c.id === m.colorId) || COLORS[0]).hex;
         const tag = document.createElement('span');
         tag.className = 'member-tag';
-        tag.innerHTML = `${m.name} <span style="opacity:.7">${m.phone}</span> <button data-i="${i}">×</button>`;
+        tag.innerHTML = `<span style="width:10px;height:10px;border-radius:50%;background:${colorHex};display:inline-block;flex-shrink:0"></span> ${m.name} <span style="opacity:.7">${m.phone}</span> <button data-i="${i}">×</button>`;
         tag.querySelector('button').addEventListener('click', () => {
           pendingMembers.splice(i, 1);
+          nextAutoColor();
           renderMembers();
         });
         display.appendChild(tag);
@@ -281,11 +334,12 @@
       const digits = phone.replace(/\D/g, '');
       if (digits.length < 10) { err.textContent = 'Enter a valid 10-digit phone number.'; err.style.display='block'; return; }
       err.style.display = 'none';
-      pendingMembers.push({ name, phone });
+      pendingMembers.push({ name, phone, colorId: selectedColorId });
       renderMembers();
       document.getElementById('member-name').value = '';
       document.getElementById('member-phone').value = '';
       document.getElementById('member-name').focus();
+      nextAutoColor();
     });
 
     document.getElementById('member-phone').addEventListener('keydown', e => {
@@ -305,7 +359,7 @@
         await fetch(`/api/family/${familyId}/members`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(m),
+          body: JSON.stringify({ name: m.name, phone: m.phone, colorId: m.colorId }),
         });
       }
     }
