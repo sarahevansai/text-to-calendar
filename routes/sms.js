@@ -80,6 +80,14 @@ function formatEventConfirmation(familyName, parsed, forMember, unknownPersonNam
 
     let msg = `✓ Added "${parsed.title}"${forLine} to ${familyName}\n${colorTag}📅 ${dateStr} at ${timeStr}`;
 
+    if (parsed.location) {
+      msg += `\n📍 ${parsed.location}`;
+    }
+
+    if (parsed.description) {
+      msg += `\n📝 ${parsed.description}`;
+    }
+
     // Warn if a person was detected in the SMS but isn't in the family
     if (unknownPersonName) {
       msg += `\n\n⚠️ Didn't recognize "${unknownPersonName}" — is he/she in your family? You can add them at your dashboard.`;
